@@ -15,7 +15,7 @@ import static iiis.systems.os.blockdb.Util.testfail;
 
 public class AtomicFileHelper {
     private static boolean atomicWriteEnabled=false;
-    private static boolean atomicWriteDisabled=true;
+    public static boolean atomicWriteDisabled=false;
     public  static boolean selfCheck(){
         if(atomicWriteDisabled){
             System.err.println("Warning: Atomic file writing force disabled.");

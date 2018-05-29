@@ -43,7 +43,7 @@ const client={
 	"PUT": async(user, val)=>{
 		const last=await client.LogLength();
 		try{
-			return (await stub.putAsync({"UserID": user, "Value": val})).Success;
+			return (await stub.putAsync({"UserID": user, "Value": Number.parseInt(val)})).Success;
 		}catch(err){
 			console.log("Error caught in PUT!");
 			const curr=await client.LogLength();
@@ -59,7 +59,7 @@ const client={
 	"DEPOSIT": async(user, val)=>{
 		const last=await client.LogLength();
 		try{
-			return (await stub.depositAsync({"UserID": user, "Value": val})).Success;
+			return (await stub.depositAsync({"UserID": user, "Value": Number.parseInt(val)})).Success;
 		}catch(err){
 			console.log("Error caught in DEPOSIT!");
 			const curr=await client.LogLength();
@@ -76,7 +76,7 @@ const client={
 	"WITHDRAW": async(user, val)=>{
 		const last=await client.LogLength();
 		try{
-			return (await stub.withdrawAsync({"UserID": user, "Value": val})).Success;
+			return (await stub.withdrawAsync({"UserID": user, "Value": Number.parseInt(val)})).Success;
 		}catch(err){
 			console.log("Error caught in WITHDRAW!");
 			const curr=await client.LogLength();
@@ -94,7 +94,7 @@ const client={
 	"TRANSFER": async(ufrom, uto, val)=>{
 		const last=await client.LogLength();
 		try{
-			return (await stub.transferAsync({"FromID": ufrom, "ToID": uto, "Value": val})).Success;
+			return (await stub.transferAsync({"FromID": ufrom, "ToID": uto, "Value": Number.parseInt(val)})).Success;
 		}catch(err){
 			console.log("Error caught in TRANSFER!");
 			const curr=await client.LogLength();
@@ -117,7 +117,7 @@ const rl = readline.createInterface({
   output: process.stdout
 })
 const cmd_param_count={
-	"GET":1, "PUT": 2, "LOG":0, "WIDHTRAW": 2, "DEPOSIT": 2, "TRANSFER": 3
+	"GET":1, "PUT": 2, "LOG":0, "WITHDRAW": 2, "DEPOSIT": 2, "TRANSFER": 3
 	
 }
 function readCommand() {
@@ -131,7 +131,14 @@ function readCommand() {
 					
 				}else{
 					const val=await client[command[0]](command[1], command[2], command[3]);
-					resolve(val);
+					if(command[0]=="GET"){
+						console.log(`${command[1]} = ${val}`);
+						resolve(val);
+					}else{
+						console.log(val);
+						resolve(val);
+					}
+					
 					
 				}
 				
@@ -148,7 +155,7 @@ function readCommand() {
 async function repl(){
 	while(true){
 		try{
-			console.log(await readCommand());
+			(await readCommand());
 		}catch(err){
 			console.log("Error: "+err);
 		}

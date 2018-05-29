@@ -11,8 +11,8 @@ public class Util {
         String content = new String(Files.readAllBytes(Paths.get(filePath)));
         return new JSONObject(content);
     }
-    public static boolean CRASH_TEST=true;
-    public static double CRASH_RATE=0.1;
+    public static boolean CRASH_TEST=false;
+    public static double CRASH_RATE=0.01;
     private static Random r=new Random();
     public static void testfail(){
         testfail(CRASH_RATE);

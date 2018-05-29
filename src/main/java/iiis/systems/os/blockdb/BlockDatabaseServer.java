@@ -3,11 +3,13 @@ package iiis.systems.os.blockdb;
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.stub.StreamObserver;
+import java.io.File;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
 
 public class BlockDatabaseServer {
     private Server server;
@@ -46,7 +48,29 @@ public class BlockDatabaseServer {
         String address = config.getString("ip");
         int port = Integer.parseInt(config.getString("port"));
         String dataDir = config.getString("dataDir");
-
+        for(String str : args){
+            if(str.equals("--enable-random-crash")){
+                Util.CRASH_TEST=true;
+            }else
+            if(str.startsWith("--random-crash-rate=")){
+                
+                Util.CRASH_RATE=Double.parseDouble(str.replace("--random-crash-rate=", ""));
+                System.err.println("Crash rate = "+Util.CRASH_RATE);
+            }else
+            if(str.equals("--no-atomic-write")){
+                AtomicFileHelper.atomicWriteDisabled=true;
+            }else if(str.equals("--clean")){
+                
+                System.err.println("Force cleaning up.");
+                try{
+                    Files.delete(new File(dataDir+"/latest.json").toPath());
+                }catch(Exception ex){
+                    System.err.println("Warning: Cleanup Failed.");
+                }
+            }else{
+                System.err.println("Warning: Unknown argument: "+str);
+            }
+        }
         DatabaseEngine.setup(dataDir);
 
         final BlockDatabaseServer server = new BlockDatabaseServer();
