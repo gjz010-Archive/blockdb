@@ -7,6 +7,7 @@ package iiis.systems.os.blockdb;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.file.*;
+import static iiis.systems.os.blockdb.Util.testfail;
 /**
  * Use file move to make sure atomic file operation.
  * @author Guo Jingzhe
@@ -14,7 +15,11 @@ import java.nio.file.*;
 
 public class AtomicFileHelper {
     private static boolean atomicWriteEnabled=false;
+    private static boolean atomicWriteDisabled=true;
     public  static boolean selfCheck(){
+        if(atomicWriteDisabled){
+            System.err.println("Warning: Atomic file writing force disabled.");
+        }else
         try{
             Path source=Files.createTempFile("AtomicSource",null);
             Path target=Files.createTempFile("AtomicTarget", null);
@@ -32,6 +37,7 @@ public class AtomicFileHelper {
     public static void atomicWrite(String target, String data) throws Exception{
         Path source=Files.createTempFile("_logtmp",".json");
         com.google.common.io.Files.write(data, source.toFile(), Charset.forName("UTF-8"));
+        testfail();
         if(atomicWriteEnabled){
             Files.move(source, new File(target).toPath(), StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING);
         }else{

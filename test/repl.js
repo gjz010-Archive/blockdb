@@ -30,6 +30,7 @@ const client={
 			return await client.LogLength();
 		}
 	},
+	"LOG": async()=>{return await client.LogLength();},
 	"GET": async(user)=>{
 		try{
 			return (await stub.getAsync({"UserID": user})).Value;
@@ -109,65 +110,50 @@ const client={
 	}
 	
 }
+const readline=require('readline')
 
-async function test(){
-	console.log("Step 1: Initialize account")
-	for(let I=0;I<=9;I++){
-		assert(await client.PUT(`TEST---${I}`,10));
-	}
-	console.log("Check value: expecting value=10")
-	assert(10==await client.GET("TEST---5"));
-
-	console.log("Check LogLength: expecting value=10")
-	assert(10==await client.LogLength());
-
-	console.log("Step 2: Try deposit")
-	for(let I=0;I<=9;I++){
-		assert(await client.DEPOSIT(`TEST---${I}`,5))
-	}
-	console.log("Check value: expecting value=15")
-	assert(15==await client.GET("TEST---5"));
-
-	console.log("Step 3: Try transfer")
-	for(let I=0;I<=9;I++){
-		assert(await client.TRANSFER(`TEST---${I}`,"TEST--TX" ,10));
-	}
-	console.log("Check value: expecting value=100")
-	assert(100==await client.GET("TEST--TX"));
-
-	console.log("Step 4: Try transfer again")
-	for(let I=0;I<=9;I++){
-		assert(await client.TRANSFER("TEST--TX" ,`TEST---${I}` ,5));
-	}
-	console.log("Check value: expecting value=50")
-	assert(50==await client.GET("TEST--TX"));
-
-	console.log("Step 5: Try withdraw")
-	for(let I=0;I<=9;I++){
-		assert(await client.WITHDRAW(`TEST---${I}` ,5));
-	}
-	console.log("Check value: expecting value=5");
-        assert(5==await client.GET("TEST---2"));
-
-	console.log("Step 5: Try overdraft")
-	for(let I=0;I<=9;I++){
-		assert(!await client.WITHDRAW(`TEST---${I}` ,10));
-	}
-	console.log("Check value: expecting value=5")
-	assert(5==await client.GET("TEST---2"));
-
-	console.log("Check LogLength: expecting value<=50")
-	assert(50>=await client.LogLength())
-
-	//console.log "Try Killing the server and restart..."
-	//console.log "Sleep for a while, waiting for hashmap reconstruction..."
-	//sleep 10;
-
-	console.log("Check value again: expecting value=5")
-	assert(5==await client.GET("TEST---2"));
-
-
-	console.log("Test completed. Please verify JSON block output with example_1.json .")
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+})
+const cmd_param_count={
+	"GET":1, "PUT": 2, "LOG":0, "WIDHTRAW": 2, "DEPOSIT": 2, "TRANSFER": 3
 	
 }
-test().then(console.log).catch(console.log);
+function readCommand() {
+	return new Promise((resolve, reject) => {
+		rl.question('db>', async (command) => {
+			command=command.split(" ");
+			command[0]=command[0].toUpperCase();
+			if(client[command[0]]){
+				if(cmd_param_count[command[0]]+1!=command.length){
+					reject(`Bad arguments. ${cmd_param_count[command[0]]} required, but found ${command.length-1}.`);
+					
+				}else{
+					const val=await client[command[0]](command[1], command[2], command[3]);
+					resolve(val);
+					
+				}
+				
+			}else{
+				reject("Bad Command.");
+				
+			}
+			
+		});
+	});
+}
+
+
+async function repl(){
+	while(true){
+		try{
+			console.log(await readCommand());
+		}catch(err){
+			console.log("Error: "+err);
+		}
+		
+	}
+	
+}
+repl();

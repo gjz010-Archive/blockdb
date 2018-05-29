@@ -10,6 +10,7 @@ import java.io.File;
 import java.nio.charset.Charset;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import static iiis.systems.os.blockdb.Util.testfail;
 /**
  *
  * @author Guo Jingzhe
@@ -103,6 +104,18 @@ public class LogManager {
             this.logPath=logPath;
             cache=new LinkedList<>();
         }
+        private Transaction deserialize(JSONObject t){
+            Transaction.Builder b=Transaction.newBuilder();
+            b.setType(Transaction.Types.valueOf(t.getString("Type")));
+            if(t.getString("Type").equals("TRANSFER")){
+                b.setFromID(t.getString("FromID"));
+                b.setToID(t.getString("ToID"));
+            }else{
+                b.setUserID(t.getString("UserID"));
+            }
+            b.setValue(t.getInt("Value"));
+            return b.build();
+        }
         public void readData(HashMap<String, Integer> data){
             try{
                 String logs_content=Files.toString(new File(logPath+"/latest.json"), Charset.forName("UTF-8"));
@@ -114,12 +127,10 @@ public class LogManager {
                 lastBlockID=obj.getInt("LastBlock");
                 Iterator cache_iter=obj.getJSONArray("CachedTransactions").iterator();
                 while(cache_iter.hasNext()){
-                    String code=((String)cache_iter.next());
-                    byte buf[]=BaseEncoding.base64().decode(code);
-                    Transaction t=Transaction.parseFrom(buf);
-                    cache.push(t);
+                    JSONObject t=((JSONObject)cache_iter.next());
+                    cache.addLast(deserialize(t));
                 }
-                for(int i=1;i<lastBlockID;i++){
+                for(int i=1;i<=lastBlockID;i++){
                     String block_content=Files.toString(new File(logPath+"/"+i+".json"), Charset.forName("UTF-8"));
                     JSONObject block=new JSONObject(block_content);
                     if(block.getInt("BlockID")!=i) crash("BlockID and Block File name Mismatch!");
@@ -129,16 +140,7 @@ public class LogManager {
                     Iterator iter=block.getJSONArray("Transactions").iterator();
                     while(iter.hasNext()){
                         JSONObject t=(JSONObject)iter.next();
-                        Transaction.Builder b=Transaction.newBuilder();
-                        b.setType(Transaction.Types.valueOf(t.getString("Type")));
-                        if(t.getString("Type").equals("TRANSFER")){
-                            b.setFromID(t.getString("FromID"));
-                            b.setToID(t.getString("ToID"));
-                        }else{
-                            b.setUserID(t.getString("UserID"));
-                        }
-                        b.setValue(t.getInt("Value"));
-                        applyTransaction(data, b.build());
+                        applyTransaction(data, deserialize(t));
                     }
                 }
                 for (Transaction t:cache) {
@@ -148,6 +150,19 @@ public class LogManager {
                 ex.printStackTrace();
                 System.exit(1);
             }
+        }
+        private JSONObject serialize(Transaction t){
+            JSONObject tj=new JSONObject();
+            tj.put("Type", t.getType().toString());
+            if(t.getType()==Transaction.Types.TRANSFER){
+                tj.put("FromID", t.getFromID());
+                tj.put("ToID", t.getToID());
+
+            }else{
+                tj.put("UserID", t.getUserID());
+            }
+            tj.put("Value", t.getValue());
+            return tj;
         }
         public synchronized void flush() throws Exception{
             if(logLength==maxLogLength){
@@ -159,37 +174,32 @@ public class LogManager {
                 block.put("Nonce","00000000");
                 JSONArray transactions=new JSONArray();
                 for(Transaction t:cache){
-                    JSONObject tj=new JSONObject();
-                    tj.put("Type", t.getType().toString());
-                    if(t.getType()==Transaction.Types.TRANSFER){
-                        tj.put("FromID", t.getFromID());
-                        tj.put("ToID", t.getToID());
-                        
-                    }else{
-                        tj.put("UserID", t.getUserID());
-                    }
-                    tj.put("Value", t.getValue());
-                    transactions.put(tj);
+                    transactions.put(serialize(t));
                 }
                 cache.clear();
                 block.put("Transactions", transactions);
                 String block_json=block.toString();
+                testfail();
                 Files.write(block_json, new File(logPath+"/"+lastBlockID+".json"), Charset.forName("UTF-8"));
+                testfail();
             }
             JSONObject latest=new JSONObject();
             latest.put("LogLength", logLength);
             latest.put("LastBlock", lastBlockID);
             JSONArray transactions=new JSONArray();
             for(Transaction t: cache){
-                transactions.put(BaseEncoding.base64().encode(t.toByteArray()));
+                transactions.put(serialize(t));
             }
             latest.put("CachedTransactions", transactions);
+            testfail();
             AtomicFileHelper.atomicWrite(logPath+"/latest.json", latest.toString());
+            testfail();
         }
         public synchronized boolean addLog(Transaction t){
-            cache.add(t);
+            cache.addLast(t);
             logLength++;
             try{
+                testfail();
                 flush();
                 return true;
             }catch(Exception ex){

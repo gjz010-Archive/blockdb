@@ -2,6 +2,7 @@ package iiis.systems.os.blockdb;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import static iiis.systems.os.blockdb.Util.testfail;
 public class DatabaseEngine {
     private static DatabaseEngine instance = null;
     private LogManager logs=null;
@@ -84,6 +85,7 @@ public class DatabaseEngine {
     }
 
     public int getLogLength() {
+        testfail();
         return logs.getLogLength();
     }
 }
